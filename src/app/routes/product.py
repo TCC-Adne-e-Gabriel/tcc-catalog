@@ -1,10 +1,13 @@
 from typing import Union
-from app.models import ProductPublic, Product
+from app.models import ProductResponse, Product, ListProductResponse
 from fastapi import FastAPI
+from fastapi import APIRouter, HTTPException, Request, status
+from app.deps import SessionDep
 
 app = FastAPI()
+router = APIRouter(prefix="/device")
 
-@router.get("/products", response_model=ProductPublic)
+@router.get("/products", response_model=ListProductResponse)
 def get_products(
     session: SessionDep,
     skip: int = 0,
@@ -16,18 +19,15 @@ def get_products(
     products = session.exec(statement).all()
     count = session.exec(count_statement).one()
 
-    return DevicesPublic(data=devices, count=count)
+    return ListProductResponse(data=devices, count=count)
 
 
-@router.get("/sales-products", response_model=DevicesPublic):
-    pass
 
+# @router.get
+# def get_sales_products(
+#     session: SessionDep,
 
-@router.get
-def get_sales_products(
-    session: SessionDep,
-
-): 
+# ): 
     
 
 @router.get('create/sales-products')
@@ -43,7 +43,7 @@ async def create_sales_products(
     
     return new_discount
 
-@app.post("/products/", response_model=ProductPublic)
+@app.post("/products/", response_model=ProductResponse)
 async def create_product(
     *,
     session: SessionDep,

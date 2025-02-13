@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field
 from fastapi import UploadFile, File
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
+from sqlmodel import Field, Relationship, SQLModel
 
 class ProductRequest: 
     name: str
@@ -18,11 +19,11 @@ class ProductBase(SQLModel):
     quantity: int
     image: bytes = Field(sa_type="BYTEA")
 
-class Category(SQLModel): 
+class CategoryBase(SQLModel): 
     name: str
     description: str
 
-class CategoryResponse(ProductCategoryBase):
+class CategoryResponse(CategoryBase):
     id: int
 
 class Category(SQLModel, table=True):
@@ -49,6 +50,9 @@ class ProductResponse(ProductBase):
     id: int
     discount_id: int
 
+class ListProductResponse(SQLModel): 
+    data: List[ProductResponse]
+    count: int
 
 class DiscountBase(SQLModel): 
     name: str
