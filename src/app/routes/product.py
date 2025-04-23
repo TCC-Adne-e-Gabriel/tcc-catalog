@@ -23,14 +23,20 @@ def get_products(
 
 
 
-# @router.get
-# def get_sales_products(
-#     session: SessionDep,
+@router.get('sales-products')
+async def create_sales_products(
+    session: SessionDep, 
+    discount: DiscountCreate, 
+    product_ids: List[int]
+):
 
-# ): 
+    new_discount = Discount.model_validate(productRequest)
+    session.add(new_discount)
+    session.refresh(new_discount)
     
+    return new_discount
 
-@router.get('create/sales-products')
+@router.post('sales-products')
 async def create_sales_products(
     session: SessionDep, 
     discount: DiscountCreate, 
