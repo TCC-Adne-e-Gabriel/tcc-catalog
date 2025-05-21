@@ -1,6 +1,8 @@
 FROM python:3.9
 
-WORKDIR /app
+WORKDIR /app/
+
+ENV PYTHONPATH=/app
 
 RUN pip install --upgrade pip
 
@@ -9,4 +11,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "./main.py"] 
+CMD ["fastapi", "run", "--workers", "4", "app/main.py"]

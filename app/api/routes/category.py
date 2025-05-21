@@ -1,0 +1,37 @@
+from fastapi import FastAPI
+from fastapi import APIRouter, HTTPException, Request, status
+from ...deps import SessionDep
+from typing import List
+from app.schemas.product import CategoryCreateRequest, CategoryResponse
+from app.services.category import CategoryService
+from app.deps import SessionDep
+from app.schemas.product import Message
+
+
+app = FastAPI()
+router = APIRouter(prefix="/category")
+category_service = CategoryService()
+
+@router.post("/", response_model=CategoryResponse, status_code=201)
+def create_category(
+    session: SessionDep, 
+    category: CategoryCreateRequest
+): 
+    category_name = category_service.get_category_by_name(session=session, name=category.name)
+    if(category_name): 
+        raise HTTPException(
+            status_code=400, 
+            detail="category with this name already exists in the system"
+        )
+    category = category_service.create_category(session=session, category=category)
+    return category
+
+
+@router.get("/", response_model=List[CategoryResponse])
+def read_categories(
+    session: SessionDep, 
+    skip: int = 0, 
+    limit: int = 100
+) : 
+    categories = category_service.get_categories(session=session)
+    return categories
