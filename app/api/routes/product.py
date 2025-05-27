@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi import APIRouter, HTTPException, Request, status
 from ...deps import SessionDep
 from typing import List
-from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse, CategoryCreateRequest, CategoryResponse, CategoryAsociation
+from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse
+from app.schemas.category import CategoryResponse, CategoryAsociation, CategoryCreateRequest
 from app.services.product import ProductService
 from app.services.category import CategoryService
 from app.deps import SessionDep
@@ -44,15 +45,31 @@ def read_products(
 @router.post("/", response_model=ProductResponse, status_code=201)
 def create_product(
     session: SessionDep, 
-    product: ProductCreateRequest
+    product_request: ProductCreateRequest
 ): 
-    product_sku = product_service.get_product_by_sku(session=session, sku=product.sku)
+    product_sku = product_service.get_product_by_sku(session=session, sku=product_request.sku)
     if(product_sku): 
         raise HTTPException(
             status_code=400, 
             detail="Product with this sku already exists in the system"
         )
-    product = product_service.create_product(session=session, product=product)
+    product = product_service.create_product(session=session, product=product_request)
+    try: 
+        if product_request.category_id:
+            for category_id in product_request.category_id: 
+                category = category_service.get_category_by_id(session=session, id=category_id)
+                if(not category):
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Check the categories"
+                    )
+            
+                product_service.associate_category(session=session, category=category, product=product)
+    except: 
+        raise HTTPException(
+            status_code=400, 
+            detail="Check if this category exists"
+        )
     return product
 
 
@@ -61,7 +78,7 @@ def create_category(
     session: SessionDep, 
     category: CategoryCreateRequest
 ): 
-    category_name = product_service.get_category_by_name(session=session, name=category.name)
+    category_name = category_service.get_category_by_name(session=session, name=category.name)
     if(category_name): 
         raise HTTPException(
             status_code=400, 
@@ -79,37 +96,81 @@ def read_products(
     product = product_service.get_products(session=session)
     return product
 
-@router.get("/category", response_model=List[CategoryResponse])
-def read_categories(
-    session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
-) : 
-    categories = product_service.get_categories(session=session)
-    print(categories)
-    return categories
-
-@router.post('')
+@router.post('/associate-category')
 def associate_category(
     session: SessionDep, 
     body: CategoryAsociation
 ):
-    product = product_service.get_product_by_id()
+    product = product_service.get_product_by_id(session=session, id=body.product_id)
     if(not product):
         raise HTTPException(
             status_code=400, 
             detail="There is no product with this ID"
         )
-    category = category_service.get_category_by_id()
+    category = category_service.get_category_by_id(session=session, id=body.category_id)
     if(not category):
         raise HTTPException(
             status_code=400, 
             detail="There is no category with this ID"
         )
-    
-    if(category in product.category): 
+    if(category in product.categories): 
         raise HTTPException(
             status_code=400, 
             detail="Category is already associated to this product"
         )
     return product_service.associate_category(session, product, category)
+
+
+@router.post('/desassociate-category')
+def desassociate_category(
+    session: SessionDep, 
+    body: CategoryAsociation
+):
+    product = product_service.get_product_by_id(session=session, id=body.product_id)
+    if(not product):
+        raise HTTPException(
+            status_code=400, 
+            detail="There is no product with this ID"
+        )
+    category = category_service.get_category_by_id(session=session, id=body.category_id)
+    if(not category):
+        raise HTTPException(
+            status_code=400, 
+            detail="There is no category with this ID"
+        )
+    if(category not in product.categories): 
+        raise HTTPException(
+            status_code=400, 
+            detail="Category is not associated to this product"
+        )
+    return product_service.desassociate_category(session, product, category)
+
+@router.delete('{id}', response_model=Message)
+def delete_product(
+    id: UUID,
+    session: SessionDep, 
+):
+    try: 
+        product_service.delete_product_by_id(session=session, id=id)
+    except:
+        raise HTTPException(
+            status_code=400, 
+            detail="Unable to delete product. Please check if the product still exists."
+        )
+    return Message(message="Product deleted successfully")
+
+
+@router.patch("/{id}", response_model=ProductResponse)
+def update_product(
+    id: UUID,
+    session: SessionDep, 
+    product_request: ProductUpdateRequest
+): 
+    product_by_id = product_service.get_product_by_id(session=session, id=id)
+    if(not product_by_id):
+        raise HTTPException(
+            status_code=400, 
+            detail="Product not found"
+        )
+    customer = product_service.update_product(session=session, product=product_request, current_product=product_by_id)
+    return customer

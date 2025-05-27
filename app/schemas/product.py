@@ -4,13 +4,13 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
+from .category import CategoryResponse
 
-class ProductCreateRequest(BaseModel):
+class ProductBase(BaseModel):
     name: str
     description: str
     price: float
     sku: str
-    category_id: Optional[List[int]] = None
     quantity: int
     available: bool
     image: Optional[UploadFile] = File(None)
@@ -24,10 +24,14 @@ class ProductUpdateRequest(BaseModel):
     quantity: Optional[int] = None
     image: Optional[UploadFile] = File(None)
 
-class ProductResponse(ProductCreateRequest):
+class ProductCreateRequest(ProductBase): 
+    category_id: Optional[List[UUID]] = None
+
+class ProductResponse(ProductBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+    categories: List[CategoryResponse]
 
     class Config:
         from_attributes = True
@@ -45,24 +49,3 @@ class CustomerChangePassword(BaseModel):
 class ListProductResponse(BaseModel): 
     data: List[ProductResponse]
     count: int
-
-
-class CategoryCreateRequest(BaseModel): 
-    name: str
-    description: str
-
-class CategoryResponse(CategoryCreateRequest):
-    id: UUID
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-class CategoryUpdateRequest(BaseModel): 
-    name: Optional[str]
-    description: Optional[str]
-
-class CategoryAsociation(BaseModel):
-    category_id: UUID
-    product_id: UUID

@@ -23,10 +23,10 @@ class Category(SQLModel, table=True):
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
         )
-    )
+    )   
     products: List["Product"] = Relationship(
         back_populates="categories",
-        link_model=ProductCategory, 
+        link_model=ProductCategory
     )
 
 
@@ -51,7 +51,7 @@ class Product(SQLModel, table=True):
     
     categories: List[Category] = Relationship(
         back_populates="products",
-        link_model=ProductCategory,
+        link_model=ProductCategory
     )
 
 

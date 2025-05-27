@@ -1,6 +1,8 @@
 from app.models.product import Product, Category
-from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse, CategoryCreateRequest, CategoryResponse
+from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse
+from app.schemas.category import CategoryCreateRequest, CategoryResponse
 from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 from typing import List
 
@@ -24,7 +26,7 @@ class ProductService():
 
 
     def update_product(self, session: Session, product: ProductUpdateRequest, current_product: Product) -> ProductResponse:
-        product_db = product.model_dump()
+        product_db = product.model_dump(exclude_none=True)
         current_product.sqlmodel_update(product_db)
         session.add(current_product)
         session.commit()
@@ -37,7 +39,9 @@ class ProductService():
         return session.exec(statement).first()
 
     def get_products(self, session: Session) -> List[ProductResponse]: 
-        statement = select(Product)
+        statement = select(Product).options(
+            selectinload(Product.categories)
+        )
         return session.exec(statement)
 
     def get_product_by_sku(self, session: Session, sku: str) -> Product: 
@@ -46,17 +50,31 @@ class ProductService():
         return result
     
     def get_product_by_id(self, session: Session, id: UUID) -> Product: 
-        statement = select(Product).where(Product.id == id)
+        statement = select(Product).where(Product.id == id).options(
+            selectinload(Product.categories)
+        )
         result = session.exec(statement).first()
         return result
-    
-    def delete_product(self, session: Session, current_product: Product): 
-        session.delete(current_product)
-        session.commit()
     
     def associate_category(self, session: Session, product: Product, category: Category) -> ProductResponse: 
         product.categories.append(category)
         session.commit()
         session.refresh(product)
         return product
-        
+    
+    def desassociate_category(self, session: Session, product: Product, category: Category) -> ProductResponse: 
+        product.categories.remove(category)
+        session.commit()
+        session.refresh(product)
+        return product
+    
+
+    def delete_product_by_id(self, session: Session, id: UUID): 
+        statement = select(Product).where(Product.id == id)
+        product = session.exec(statement).first()
+
+        for category in product.categories:
+            category.products.remove(product)
+            session.commit()
+        session.delete(product)
+        session.commit()
