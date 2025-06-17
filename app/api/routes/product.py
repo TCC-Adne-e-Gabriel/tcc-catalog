@@ -1,15 +1,12 @@
 from fastapi import FastAPI
-from fastapi import APIRouter, HTTPException, Request, status
-from ...deps import SessionDep
-from typing import List
-from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse
-from app.schemas.category import CategoryResponse, CategoryAsociation, CategoryCreateRequest
+from fastapi import APIRouter, HTTPException, Request, status, Depends
+from typing import List, Any
 from app.services.product import ProductService
 from app.services.category import CategoryService
-from app.deps import SessionDep
-from uuid import UUID
-from app.schemas.product import Message
-
+from app.core.db import get_db_conn
+from uuid import UUID, uuid4
+from datetime import datetime
+import json
 
 app = FastAPI()
 router = APIRouter(prefix="/product")
@@ -17,160 +14,181 @@ product_service = ProductService()
 category_service = CategoryService()
 
 
-@router.get("/{id}", response_model=ProductResponse)
-def read_product_by_id(
-    id: UUID, 
-    session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
-) : 
-    product = product_service.get_product(session=session, product_id=id)
-    if(not product): 
-        raise HTTPException(
-            status_code=400, 
-            detail="Product with this id doesnt exist"
-        )
-    return product
+@router.get("/{id}/")
+def read_product_by_id(id, conn=Depends(get_db_conn)) -> Any:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM product WHERE product.id = '"+ id + "'")
+    product = cursor.fetchone()    
+    cursor.close()
+    return {"product": product}
+
+@router.get("/")
+def get_products(id, conn=Depends(get_db_conn)) -> Any:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM product")
+    products = cursor.fetchall()
+    cursor.close()
+    return {"category": products}
 
 
-@router.get("/", response_model=List[ProductResponse])
-def read_products(
-    session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
-) : 
-    product = product_service.get_products(session=session)
-    return product
+@router.post("/", status_code=201)
+async def create_product(
+    request: Request,
+    conn=Depends(get_db_conn)
+) -> Any: 
+    body = await request.json()
+    cursor = conn.cursor()
+    date_now = datetime.now()
+    product_id = uuid4()
 
-@router.post("/", response_model=ProductResponse, status_code=201)
-def create_product(
-    session: SessionDep, 
-    product_request: ProductCreateRequest
-): 
-    product_sku = product_service.get_product_by_sku(session=session, sku=product_request.sku)
-    if(product_sku): 
-        raise HTTPException(
-            status_code=400, 
-            detail="Product with this sku already exists in the system"
-        )
-    product = product_service.create_product(session=session, product=product_request)
-    try: 
-        if product_request.category_id:
-            for category_id in product_request.category_id: 
-                category = category_service.get_category_by_id(session=session, id=category_id)
-                if(not category):
-                    raise HTTPException(
-                        status_code=400, 
-                        detail="Check the categories"
-                    )
-            
-                product_service.associate_category(session=session, category=category, product=product)
-    except: 
-        raise HTTPException(
-            status_code=400, 
-            detail="Check if this category exists"
-        )
-    return product
+    name = body.get("name")
+    description = body.get("description")
+    price = body.get("price")
+    available = body.get("available", True)
+    sku = body.get("sku")
+    discount = body.get("discount", None)
+    quantity = body.get("quantity", 0)
+    image = body.get("image", None) 
+    created_at = date_now
+    updated_at = date_now
 
+    categories = body.get("categories", None) 
 
-@router.post("/category", response_model=CategoryResponse, status_code=201)
-def create_category(
-    session: SessionDep, 
-    category: CategoryCreateRequest
-): 
-    category_name = category_service.get_category_by_name(session=session, name=category.name)
-    if(category_name): 
-        raise HTTPException(
-            status_code=400, 
-            detail="category with this name already exists in the system"
-        )
-    category = product_service.create_category(session=session, category=category)
-    return category
+    query = """
+        INSERT INTO product (
+            id, name, description, price, available, sku, discount, quantity, image, created_at, updated_at, categories
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    """
 
-@router.get("/", response_model=List[ProductResponse])
-def read_products(
-    session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
-) : 
-    product = product_service.get_products(session=session)
-    return product
+    values = (
+        product_id,
+        name,
+        description,
+        price,
+        available,
+        sku,
+        discount,
+        quantity,
+        image,
+        created_at,
+        updated_at,
+        categories
+    )
+
+    cursor.execute(query, values)
+    conn.commit()
+    cursor.close()
+
+    body["id"] = product_id
+    body["created_at"] = created_at.isoformat()
+    body["updated_at"] = updated_at.isoformat()
+
+    body["discount"] = discount
+    body["image"] = image
+    body["categories"] = categories
+
+    return body
 
 @router.post('/associate-category')
-def associate_category(
-    session: SessionDep, 
-    body: CategoryAsociation
+async def associate_category(
+    request: Request, 
+    conn=Depends(get_db_conn)
 ):
-    product = product_service.get_product_by_id(session=session, id=body.product_id)
+    body = await request.json()
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM product WHERE product.id = '"+ id + "'")
+    product = cursor.fetchone()    
     if(not product):
         raise HTTPException(
             status_code=400, 
             detail="There is no product with this ID"
         )
-    category = category_service.get_category_by_id(session=session, id=body.category_id)
+    cursor.execute("SELECT * FROM category WHERE category.id = '" + id + "'")
+    category = cursor.fetchone()
     if(not category):
         raise HTTPException(
             status_code=400, 
             detail="There is no category with this ID"
         )
-    if(category in product.categories): 
+    
+    cursor.execute("SELECT * FROM product_category pc WHERE pc.product_id = '" + id + "' AND pc.category_id")
+    relationship = cursor.fetchone()
+
+    if(relationship): 
         raise HTTPException(
             status_code=400, 
             detail="Category is already associated to this product"
         )
-    return product_service.associate_category(session, product, category)
+    
+    query = f"INSERT INTO product_category (product_id, category_id) VALUES ('{body["product_id"]}', '{body["category_id"]}');"
+
+    cursor.execute(query)
+    conn.commit()
+    return {"message": "New category added to product"}
 
 
 @router.post('/desassociate-category')
-def desassociate_category(
-    session: SessionDep, 
-    body: CategoryAsociation
+async def desassociate_category(
+    request: Request, 
+    conn=Depends(get_db_conn)
 ):
-    product = product_service.get_product_by_id(session=session, id=body.product_id)
+    body = await request.json()
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM product WHERE product.id = '"+ id + "'")
+    product = cursor.fetchone()    
     if(not product):
         raise HTTPException(
             status_code=400, 
             detail="There is no product with this ID"
         )
-    category = category_service.get_category_by_id(session=session, id=body.category_id)
+    cursor.execute("SELECT * FROM category WHERE category.id = '" + id + "'")
+    category = cursor.fetchone()
     if(not category):
         raise HTTPException(
             status_code=400, 
             detail="There is no category with this ID"
         )
-    if(category not in product.categories): 
+    
+    cursor.execute("SELECT * FROM product_category pc WHERE pc.product_id = '" + id + "' AND pc.category_id")
+    relationship = cursor.fetchone()
+
+    if(not relationship): 
         raise HTTPException(
             status_code=400, 
             detail="Category is not associated to this product"
         )
-    return product_service.desassociate_category(session, product, category)
+    
+    query =  f"DELETE FROM product_category WHERE product_id = '{body["product_id"]}' AND category_id = '{body["category_id"]}';"
 
-@router.delete('{id}', response_model=Message)
-def delete_product(
-    id: UUID,
-    session: SessionDep, 
+    cursor.execute(query)
+    conn.commit()
+    return {"message": "Category removed of product"}
+
+
+async def update_product(
+    id: str,
+    product: Request,
+    conn=Depends(get_db_conn)
 ):
-    try: 
-        product_service.delete_product_by_id(session=session, id=id)
-    except:
-        raise HTTPException(
-            status_code=400, 
-            detail="Unable to delete product. Please check if the product still exists."
-        )
-    return Message(message="Product deleted successfully")
+    body = await product.json()
+    cursor = conn.cursor()
+    values, fields = product_service.get_values(body)
 
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
 
-@router.patch("/{id}", response_model=ProductResponse)
-def update_product(
-    id: UUID,
-    session: SessionDep, 
-    product_request: ProductUpdateRequest
-): 
-    product_by_id = product_service.get_product_by_id(session=session, id=id)
-    if(not product_by_id):
-        raise HTTPException(
-            status_code=400, 
-            detail="Product not found"
-        )
-    customer = product_service.update_product(session=session, product=product_request, current_product=product_by_id)
-    return customer
+    values.append(id)
+
+    query = f"UPDATE product SET {', '.join(fields)} WHERE id = %s"
+
+    cursor.execute(query, values)
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        cursor.close()
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    cursor.close()
+    return {"message": "Product updated successfully"}
