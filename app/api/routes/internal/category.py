@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from fastapi import APIRouter, HTTPException, Request, status
-from ...deps import SessionDep
+from fastapi import APIRouter, HTTPException
 from typing import List
 from app.schemas.category import CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest
 from app.services.category import CategoryService
@@ -9,7 +8,7 @@ from app.schemas.product import Message
 from uuid import UUID
 
 app = FastAPI()
-router = APIRouter(prefix="/category")
+router = APIRouter(prefix="/internal/category")
 category_service = CategoryService()
 
 @router.post("/", response_model=CategoryResponse, status_code=201)

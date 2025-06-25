@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi import APIRouter, HTTPException, Request, status
-from ...deps import SessionDep
 from typing import List
-from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse
+from app.schemas.product import ProductCreateRequest, ProductUpdateRequest, ProductResponse, UpdateQuantityRequest
 from app.schemas.category import CategoryResponse, CategoryAsociation, CategoryCreateRequest
 from app.services.product import ProductService
 from app.services.category import CategoryService
@@ -12,7 +11,7 @@ from app.schemas.product import Message
 
 
 app = FastAPI()
-router = APIRouter(prefix="/product")
+router = APIRouter(prefix="/internal/product")
 product_service = ProductService()
 category_service = CategoryService()
 
@@ -87,15 +86,6 @@ def create_category(
     category = product_service.create_category(session=session, category=category)
     return category
 
-@router.get("/", response_model=List[ProductResponse])
-def read_products(
-    session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
-) : 
-    product = product_service.get_products(session=session)
-    return product
-
 @router.post('/associate-category')
 def associate_category(
     session: SessionDep, 
@@ -164,7 +154,7 @@ def delete_product(
 def update_product(
     id: UUID,
     session: SessionDep, 
-    product_request: ProductUpdateRequest
+    product_request: UpdateQuantityRequest
 ): 
     product_by_id = product_service.get_product_by_id(session=session, id=id)
     if(not product_by_id):
@@ -173,4 +163,20 @@ def update_product(
             detail="Product not found"
         )
     customer = product_service.update_product(session=session, product=product_request, current_product=product_by_id)
+    return customer
+
+@router.patch("/buy/{id}", response_model=ProductResponse)
+def buy_product(
+    id: UUID,
+    session: SessionDep, 
+    quantity_request: UpdateQuantityRequest
+): 
+    product_by_id = product_service.get_product_by_id(session=session, id=id)
+    if(not product_by_id):
+        raise HTTPException(
+            status_code=400, 
+            detail="Product not found"
+        )
+    product_update = ProductUpdateRequest(quantity=product_by_id.quantity - quantity_request.quantity)
+    customer = product_service.update_product(session=session, product=product_update, current_product=product_by_id)
     return customer

@@ -1,7 +1,7 @@
 from fastapi import UploadFile, File
 from typing import Optional, List
 from datetime import datetime, timezone
-from sqlalchemy import LargeBinary, String
+from sqlalchemy import LargeBinary
 from sqlmodel import Field, Relationship, SQLModel, DateTime, func, Column
 from uuid import UUID, uuid4
 from decimal import Decimal

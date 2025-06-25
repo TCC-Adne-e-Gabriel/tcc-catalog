@@ -49,3 +49,6 @@ class CustomerChangePassword(BaseModel):
 class ListProductResponse(BaseModel): 
     data: List[ProductResponse]
     count: int
+
+class UpdateQuantityRequest(BaseModel): 
+    quantity: int
