@@ -4,36 +4,59 @@ from typing import List
 from app.schemas.category import CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest
 from app.services.category import CategoryService
 from app.deps import SessionDep
+from app.exceptions import CategoryNameAlreadyExists, CategoryNotFoundException
 from app.schemas.product import Message
 from uuid import UUID
+from http import HTTPStatus
 
 app = FastAPI()
 router = APIRouter(prefix="/internal/category")
 category_service = CategoryService()
 
+
+@router.get("/{id}/", response_model=CategoryResponse)
+def read_product_by_id(
+    id: UUID, 
+    session: SessionDep
+) : 
+    try:
+        product = category_service.get_category(session=session, id=id)
+        return product
+    except CategoryNotFoundException: 
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, 
+            detail="Category not found"
+        )
+    except Exception: 
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, 
+        )
+    
 @router.post("/", response_model=CategoryResponse, status_code=201)
 def create_category(
     session: SessionDep, 
     category: CategoryCreateRequest
 ): 
-    category_name = category_service.get_category_by_name(session=session, name=category.name)
-    if(category_name): 
+    try: 
+        category = category_service.create_category(session=session, category=category)
+        return category
+    except CategoryNameAlreadyExists:
         raise HTTPException(
-            status_code=400, 
-            detail="category with this name already exists in the system"
+            status_code=HTTPStatus.BAD_REQUEST, 
+            detail="Category name already exists"
         )
-    category = category_service.create_category(session=session, category=category)
-    return category
-
-
+    except Exception:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST)
+    
 @router.get("/", response_model=List[CategoryResponse])
 def read_categories(
     session: SessionDep, 
-    skip: int = 0, 
-    limit: int = 100
 ) : 
-    categories = category_service.get_categories(session=session)
-    return categories
+    try: 
+        categories = category_service.get_categories(session=session)
+        return categories
+    except Exception:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST)
 
 @router.delete('/{id}', response_model=Message)
 def delete_category(
@@ -42,12 +65,12 @@ def delete_category(
 ):
     try: 
         category_service.delete_category_by_id(session=session, id=id)
-    except:
+        return Message(message="Category deleted successfully")
+    except CategoryNotFoundException:
         raise HTTPException(
-            status_code=400, 
-            detail="Unable to delete category. Please check if the product still exists."
+            status_code=HTTPStatus.NOT_FOUND, 
+            detail="Category not found"
         )
-    return Message(message="Category deleted successfully")
 
 
 @router.patch("/{id}", response_model=CategoryResponse)
@@ -56,11 +79,15 @@ def update_category(
     session: SessionDep, 
     category_request: CategoryUpdateRequest
 ): 
-    category_by_id = category_service.get_category_by_id(session=session, id=id)
-    if(not category_by_id):
+    try: 
+        customer = category_service.update_category(session=session, category=category_request, id=id)
+        return customer
+    except CategoryNotFoundException:
         raise HTTPException(
-            status_code=400, 
+            status_code=HTTPStatus.NOT_FOUND, 
             detail="Category not found"
         )
-    customer = category_service.update_category(session=session, category=category_request, current_category=category_by_id)
-    return customer
+    except Exception:        
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND
+        )
