@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
-from .category import CategoryResponse
+from app.schemas.product import CategoryResponse
 
 class ProductBase(BaseModel):
     name: str

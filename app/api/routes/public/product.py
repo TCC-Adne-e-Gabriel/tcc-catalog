@@ -4,7 +4,6 @@ from typing import List
 from app.schemas.product import ProductResponse
 from app.services.product import ProductService
 from app.services.category import CategoryService
-from app.deps import SessionDep
 from http import HTTPStatus
 from uuid import UUID
 from app.exceptions import (
