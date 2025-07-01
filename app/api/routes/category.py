@@ -3,10 +3,8 @@ from typing import List
 from app.schemas.category import CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest
 from app.services.category import CategoryService
 from app.deps import SessionDep
-from app.exceptions import CategoryNameAlreadyExists, CategoryNotFoundException
 from app.schemas.product import Message
 from uuid import UUID
-from http import HTTPStatus
 from app import auth
 
 app = FastAPI()

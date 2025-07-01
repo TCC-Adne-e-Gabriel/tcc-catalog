@@ -1,9 +1,10 @@
 from typing import Literal
 
+from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_core import MultiHostUrl
 
 from pathlib import Path
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -15,13 +16,6 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: Literal["dev", "prod"] = "dev"
 
-<<<<<<< Updated upstream
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "moretti-customer", 
-    POSTGRES_PASSWORD: str = "moretti"
-    POSTGRES_DB: str = "product_db"
-=======
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5434
     POSTGRES_USER: str
@@ -33,6 +27,18 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_DAYS: int
     CUSTOMER_API_KEY: str = ""
     CUSTOMER_API: str = ""
->>>>>>> Stashed changes
+
+    @computed_field
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        return MultiHostUrl.build(
+            scheme="postgresql+psycopg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
+        )
+
 
 settings = Settings()  
