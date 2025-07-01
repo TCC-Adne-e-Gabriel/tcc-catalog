@@ -66,10 +66,11 @@ class ProductService():
         if not product: 
             raise ProductNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Product not Found")
         return product
-
-        if "discount" in body:
-            fields.append("discount = %s")
-            values.append(body["discount"])
+    
+    def get_products(self, session: Session) -> List[ProductResponse]: 
+        statement = select(Product)
+        products = session.exec(statement).all()
+        return products
 
     def get_product_by_sku(self, session: Session, sku: str) -> ProductResponse: 
         statement = select(Product).where(Product.sku == sku)

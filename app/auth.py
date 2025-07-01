@@ -25,42 +25,24 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 settings = Settings()
 customer_client = CustomerClient()
 
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
         
-async def get_current_customer(session: SessionDep, token: str = Depends(oauth2_scheme)) -> Customer:
+async def get_current_customer_role(session: SessionDep, token: str = Depends(oauth2_scheme)) -> Customer:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
+        customer_id = payload.get("sub")
+        role = payload.get("role")
+        if customer_id is None:
             raise InvalidTokenException
-        token_data = TokenData(username=username)
+        if role is None: 
+            raise InvalidTokenException
     except InvalidTokenError:
         raise InvalidPasswordException(HTTPStatus.BAD_REQUEST, detail="Invalid Credentials")
-    user = await customer_client.fetch_user(username)
-    if not user:
-        raise UserNotFoundException(HTTPStatus.NOT_FOUND, detail="User Not Found")
-    return user
+    return role
 
-async def get_current_active_customer(
-    self, 
-    session: Session, 
-    token: str
-):
-    current_customer = self.get_current_customer(session=session, token=token)
-    return current_customer
-    
 def role_required(roles: List[str]):
-    async def checker(current_customer: Customer = Depends(get_current_customer)):
-        if not current_customer.role.value in roles:
+    async def checker(role: str = Depends(get_current_customer_role)):
+        print(role)
+        if not role in roles:
             raise UnauthorizedException(HTTPStatus.UNAUTHORIZED, detail="User unauthorized")
-        return current_customer
+        return 
     return checker

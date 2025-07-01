@@ -40,7 +40,7 @@ def create_product(
     product_request: ProductCreateRequest
 ): 
         
-    product = product_service.create_product(session=session, product=product_request)
+    product = product_service.create_product(session=session, product_request=product_request)
     return product
 
 @router.post('/associate-category/', response_model=ProductResponse, dependencies=[Depends(auth.role_required(["admin"]))])
