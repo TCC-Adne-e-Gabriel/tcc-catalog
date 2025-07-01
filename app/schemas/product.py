@@ -43,9 +43,6 @@ class PasswordRequest(BaseModel):
 class Message(BaseModel): 
     message: str
 
-class CustomerChangePassword(BaseModel):
-    password: str
-
 class ListProductResponse(BaseModel): 
     data: List[ProductResponse]
     count: int
