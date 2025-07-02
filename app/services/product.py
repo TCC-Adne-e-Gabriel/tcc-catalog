@@ -5,6 +5,7 @@ from app.schemas.category import CategoryAsociation
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 from uuid import UUID
+<<<<<<< HEAD
 from app.exceptions import ProductNotFoundException, CategoryNotFoundException, SameSkuException, DuplicatedCategoryException, UnlinkedCategoryException
 from typing import List
 
@@ -62,13 +63,42 @@ class ProductService():
         if not product: 
             raise ProductNotFoundException
         return product
+=======
+import json
+from datetime import datetime
+from typing import List
 
-    def get_products(self, session: Session) -> List[ProductResponse]: 
-        statement = select(Product).options(
-            selectinload(Product.categories)
-        )
-        return session.exec(statement)
+class ProductService():
+    def get_values(body):       
+        fields = []
+        values = []
 
+        if body.get("name") is not None:
+            fields.append("name = %s")
+            values.append(body["name"])
+
+        if body.get("description") is not None:
+            fields.append("description = %s")
+            values.append(body["description"])
+
+        if body.get("price") is not None:
+            fields.append("price = %s")
+            values.append(body["price"])
+
+        if body.get("available") is not None:
+            fields.append("available = %s")
+            values.append(body["available"])
+
+        if body.get("sku") is not None:
+            fields.append("sku = %s")
+            values.append(body["sku"])
+>>>>>>> 8fd0af011d9f6d7915111cc504dc75b82a6e84b6
+
+        if "discount" in body:
+            fields.append("discount = %s")
+            values.append(body["discount"])
+
+<<<<<<< HEAD
     def get_product_by_sku(self, session: Session, sku: str) -> ProductResponse: 
         statement = select(Product).where(Product.sku == sku)
         result = session.exec(statement).first()
@@ -123,3 +153,21 @@ class ProductService():
             session.commit()
         session.delete(product)
         session.commit()
+=======
+        if body.get("quantity") is not None:
+            fields.append("quantity = %s")
+            values.append(body["quantity"])
+
+        if "image" in body:
+            fields.append("image = %s")
+            values.append(body["image"])
+
+        if body.get("categories") is not None:
+            categories_json = json.dumps(body["categories"])
+            fields.append("categories = %s")
+            values.append(categories_json)
+
+        fields.append("updated_at = %s")
+        values.append(datetime.now())
+        return values, fields
+>>>>>>> 8fd0af011d9f6d7915111cc504dc75b82a6e84b6
