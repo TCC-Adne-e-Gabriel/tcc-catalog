@@ -53,8 +53,3 @@ class Product(SQLModel, table=True):
         back_populates="products",
         link_model=ProductCategory
     )
-
-
-
-
-

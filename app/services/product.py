@@ -63,12 +63,6 @@ class ProductService():
             raise ProductNotFoundException
         return product
 
-    def get_products(self, session: Session) -> List[ProductResponse]: 
-        statement = select(Product).options(
-            selectinload(Product.categories)
-        )
-        return session.exec(statement)
-
     def get_product_by_sku(self, session: Session, sku: str) -> ProductResponse: 
         statement = select(Product).where(Product.sku == sku)
         result = session.exec(statement).first()
