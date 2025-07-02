@@ -121,7 +121,7 @@ def desassociate_category(
             status_code=HTTPStatus.BAD_REQUEST, 
             detail="Category is not associated to this product"
         )
-    except: 
+    except Exception: 
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST
         )
@@ -139,7 +139,7 @@ def delete_product(
             status_code=HTTPStatus.NOT_FOUND, 
             detail="Product not found."
         )
-    except:
+    except Exception:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST
         )
@@ -159,7 +159,7 @@ def update_product(
             status_code=HTTPStatus.NOT_FOUND, 
             detail="Product not found."
         )
-    except:
+    except Exception:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST
         )
@@ -178,7 +178,7 @@ def buy_product(
             status_code=HTTPStatus.NOT_FOUND, 
             detail="Product not found"
         )
-    except:
+    except Exception:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST
         )
