@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: Literal["dev", "prod"] = "dev"
 
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "moretti-customer", 
-    POSTGRES_PASSWORD: str = "moretti"
-    POSTGRES_DB: str = "product_db"
+    POSTGRES_SERVER: str = ""
+    POSTGRES_PORT: int
+    POSTGRES_USER: str = "", 
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
 
 settings = Settings()  
