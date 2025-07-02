@@ -2,7 +2,6 @@ from sqlmodel import Session, create_engine
 import logging
 from app.core.settings import settings
 from app.models.product import Product
-from app.models.product import Category
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -1,17 +1,12 @@
 services: 
-  db: 
+  catalog_db: 
     image: docker.io/postgres:15-alpine
     volumes: 
-      - customer-db:/var/lib/postgresql/data/pgdata
+      - catalog_db:/var/lib/postgresql/data/pgdata
     env_file: 
       - .env
     ports:
       - 5434:5432
-    environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
     networks: 
       - tcc-network
 
@@ -21,18 +16,12 @@ services:
       networks:
         - tcc-network
       depends_on:
-        - db
+        - catalog_db
       command: sh scripts/prestart.sh
       env_file:
         - .env
-      environment:
-        - POSTGRES_SERVER=db
-        - POSTGRES_PORT=${POSTGRES_PORT}
-        - POSTGRES_DB=${POSTGRES_DB}
-        - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
 
-  backend: 
+  catalog_backend: 
     build:
       context: .
     ports: 
@@ -40,18 +29,12 @@ services:
     networks:
       - tcc-network
     depends_on: 
-      - db
+      - catalog_db
     env_file: 
       - .env  
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
 
 volumes: 
-  customer-db:
+  catalog_db:
 
 networks:
   tcc-network: 

@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from uuid import UUID
 from typing import List
 from app.exceptions import DuplicatedCategoryException, CategoryNameAlreadyExists, CategoryNotFoundException
+from http import HTTPStatus
 
 class CategoryService():
   

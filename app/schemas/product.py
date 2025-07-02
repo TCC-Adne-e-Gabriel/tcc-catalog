@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel
 from uuid import UUID
-from .category import CategoryResponse
+from app.schemas.category import CategoryResponse
 
 class ProductBase(BaseModel):
     name: str
@@ -42,9 +42,6 @@ class PasswordRequest(BaseModel):
 
 class Message(BaseModel): 
     message: str
-
-class CustomerChangePassword(BaseModel):
-    password: str
 
 class ListProductResponse(BaseModel): 
     data: List[ProductResponse]

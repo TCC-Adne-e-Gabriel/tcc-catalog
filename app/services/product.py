@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from uuid import UUID
 from app.exceptions import ProductNotFoundException, CategoryNotFoundException, SameSkuException, DuplicatedCategoryException, UnlinkedCategoryException
 from typing import List
+from http import HTTPStatus
 
 class ProductService():
     def __init__(self): 
@@ -37,6 +38,7 @@ class ProductService():
         current_product = self.get_product_by_id(session, id)
         if not current_product: 
             raise ProductNotFoundException
+        
         product_request = ProductUpdateRequest(quantity=current_product.quantity - quantity)
         product_db = product_request.model_dump(exclude_none=True)
         current_product.sqlmodel_update(product_db)
@@ -47,8 +49,10 @@ class ProductService():
     
     def update_product(self, session: Session, product: ProductUpdateRequest, id: UUID) -> ProductResponse:
         current_product = self.get_product_by_id(session, id)
+
         if not current_product: 
             raise ProductNotFoundException
+        
         product_db = product.model_dump(exclude_none=True)
         current_product.sqlmodel_update(product_db)
         session.add(current_product)
@@ -62,6 +66,11 @@ class ProductService():
         if not product: 
             raise ProductNotFoundException
         return product
+    
+    def get_products(self, session: Session) -> List[ProductResponse]: 
+        statement = select(Product)
+        products = session.exec(statement).all()
+        return products
 
     def get_product_by_sku(self, session: Session, sku: str) -> ProductResponse: 
         statement = select(Product).where(Product.sku == sku)
@@ -79,11 +88,14 @@ class ProductService():
         product = self.get_product_by_id(session=session, id=category_link.product_id)
         if not product:
             raise ProductNotFoundException
+        
         category = self.category_service.get_category_by_id(session=session, id=category_link.category_id)
         if not category:
             raise CategoryNotFoundException
-        if(category in product.categories): 
+        
+        if category in product.categories: 
             raise DuplicatedCategoryException
+        
         product.categories.append(category)
         session.commit()
         session.refresh(product)
@@ -92,14 +104,14 @@ class ProductService():
     def desassociate_category(self, session: Session, category_unlink: CategoryAsociation) -> ProductResponse: 
         product = self.get_product_by_id(session=session, id=category_unlink.product_id)
         if not product: 
-            raise ProductNotFoundException
+            raise ProductNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Product not Found")
         
         category = self.category_service.get_category_by_id(session=session, id=category_unlink.category_id)
         if not category: 
-            raise CategoryNotFoundException
+            raise CategoryNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Category not found")
         
         if category not in product.categories:
-            raise UnlinkedCategoryException
+            raise UnlinkedCategoryException(HTTPStatus.BAD_REQUEST, "Category is not associated to Product")
 
         product.categories.remove(category)
         session.commit()
@@ -111,7 +123,7 @@ class ProductService():
         product = self.get_product_by_id(session=session, id=id)
 
         if not product: 
-            raise ProductNotFoundException
+            raise ProductNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Product not Found")
         for category in product.categories:
             category.products.remove(product)
             session.commit()
