@@ -39,7 +39,6 @@ def create_product(
     session: SessionDep, 
     product_request: ProductCreateRequest
 ): 
-        
     product = product_service.create_product(session=session, product_request=product_request)
     return product
 
