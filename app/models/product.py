@@ -40,7 +40,7 @@ class Product(SQLModel, table=True):
         unique=True, 
         index=True
     )
-    discount: Optional[Decimal] = 0
+    discount: Optional[Decimal] = Field(default=0)
     quantity: int
     image: Optional[bytes] = Field(
         default=None,

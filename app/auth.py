@@ -18,7 +18,7 @@ settings = Settings()
 customer_client = CustomerClient()
 
         
-async def get_current_customer_role(token: str = Depends(oauth2_scheme)) -> TokenData:
+def get_current_customer_data(token: str = Depends(oauth2_scheme)) -> TokenData:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         customer_id = payload.get("sub")
@@ -31,10 +31,10 @@ async def get_current_customer_role(token: str = Depends(oauth2_scheme)) -> Toke
     except InvalidTokenError:
         raise InvalidPasswordException
     return token_data
-
+    
 def role_required(roles: List[str]):
-    async def checker(decoded_token: TokenData = Depends(get_current_customer_role)):
-        if not decoded_token.role in roles:
+    def checker(decoded_token: TokenData = Depends(get_current_customer_data)):
+        if decoded_token.role not in roles:
             raise UnauthorizedException
         return decoded_token
     return checker
