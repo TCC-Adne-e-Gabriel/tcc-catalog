@@ -10,6 +10,7 @@ from http import HTTPStatus
 from uuid import UUID
 from app.schemas.product import Message
 from app import auth
+from app.context import user_id_context
 
 
 app = FastAPI()
@@ -34,50 +35,62 @@ def read_products(
     return product
 
 
-@router.post("/", response_model=ProductResponse, status_code=201, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.post("/", response_model=ProductResponse, status_code=201)
 def create_product(
+    product_request: ProductCreateRequest,
     session: SessionDep, 
-    product_request: ProductCreateRequest
+    decoded_token = Depends(auth.role_required(["admin"]))
 ): 
+    user_id_context.set(decoded_token.id)
     product = product_service.create_product(session=session, product_request=product_request)
     return product
 
-@router.post('/associate-category/', response_model=ProductResponse, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.post('/associate-category/', response_model=ProductResponse)
 def associate_category(
     session: SessionDep, 
-    associate_request: CategoryAsociation
+    associate_request: CategoryAsociation,
+    decoded_token = Depends(auth.role_required(["admin"]))
 ):
+    user_id_context.set(decoded_token.id)
     return product_service.associate_category(session, associate_request)
 
-@router.post('/desassociate-category/', dependencies=[Depends(auth.role_required(["admin"]))])
+@router.post('/desassociate-category/')
 def desassociate_category(
     session: SessionDep, 
-    body: CategoryAsociation
+    body: CategoryAsociation,
+    decoded_token = Depends(auth.role_required(["admin"]))
 ):
+    user_id_context.set(decoded_token.id)
     return product_service.desassociate_category(session, body)
 
-@router.delete('/{id}/', response_model=Message, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.delete('/{id}/', response_model=Message)
 def delete_product(
     id: UUID,
     session: SessionDep, 
+    decoded_token = Depends(auth.role_required(["admin"]))
 ):
+    user_id_context.set(decoded_token.id)
     product_service.delete_product_by_id(session=session, id=id)
     return Message(message="Product deleted successfully")
 
-@router.patch("/{id}/", response_model=ProductResponse, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.patch("/{id}/", response_model=ProductResponse)
 def update_product(
     id: UUID,
     session: SessionDep, 
-    product_request: UpdateQuantityRequest
+    product_request: UpdateQuantityRequest,
+    decoded_token = Depends(auth.role_required(["admin"]))
 ): 
+    user_id_context.set(decoded_token.id)
     customer = product_service.update_product(session=session, product=product_request, id=id)
     return customer
     
-@router.patch("/buy/{id}/", response_model=ProductResponse, dependencies=[Depends(auth.role_required(["admin", "service"]))])
+@router.patch("/buy/{id}/", response_model=ProductResponse)
 def buy_product(
     id: UUID,
     session: SessionDep, 
-    quantity_request: UpdateQuantityRequest
+    quantity_request: UpdateQuantityRequest, 
+    decoded_token = Depends(auth.role_required(["admin"]))
 ): 
+    user_id_context.set(decoded_token.id)
     customer = product_service.buy_product(session=session, quantity=quantity_request.quantity, id=id)
     return customer

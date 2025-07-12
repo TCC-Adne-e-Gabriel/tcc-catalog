@@ -8,6 +8,8 @@ from uuid import UUID
 from app.exceptions import ProductNotFoundException, CategoryNotFoundException, SameSkuException, DuplicatedCategoryException, UnlinkedCategoryException
 from typing import List
 from http import HTTPStatus
+from app.catalog_logging import logger
+
 
 class ProductService():
     def __init__(self): 
@@ -32,6 +34,7 @@ class ProductService():
         session.add(db_product)
         session.commit()
         session.refresh(db_product)
+        logger.audit(f"Product {db_product.id} created")
         return db_product
 
     def buy_product(self, session: Session, quantity: int, id: UUID) -> ProductResponse:
@@ -45,6 +48,7 @@ class ProductService():
         session.add(current_product)
         session.commit()
         session.refresh(current_product)
+        logger.info(f"Product {current_product.id} decreased by {quantity}")
         return current_product
     
     def update_product(self, session: Session, product: ProductUpdateRequest, id: UUID) -> ProductResponse:
@@ -58,6 +62,7 @@ class ProductService():
         session.add(current_product)
         session.commit()
         session.refresh(current_product)
+        logger.audit(f"Product {current_product.id} updated")
         return current_product
 
     def get_product(self, session: Session, product_id: UUID) -> ProductResponse: 
@@ -99,6 +104,7 @@ class ProductService():
         product.categories.append(category)
         session.commit()
         session.refresh(product)
+        logger.audit(f"Category {category.id} associated to product {product.id}")
         return product
     
     def desassociate_category(self, session: Session, category_unlink: CategoryAsociation) -> ProductResponse: 
@@ -116,6 +122,7 @@ class ProductService():
         product.categories.remove(category)
         session.commit()
         session.refresh(product)
+        logger.audit(f"Category {category.id} desassociated to product {product.id}")
         return product
     
 
@@ -129,3 +136,4 @@ class ProductService():
             session.commit()
         session.delete(product)
         session.commit()
+        logger.audit(f"Product {id} deleted")

@@ -6,6 +6,7 @@ from app.deps import SessionDep
 from app.schemas.product import Message
 from uuid import UUID
 from app import auth
+from app.context import user_id_context
 
 app = FastAPI()
 router = APIRouter(prefix="/category")
@@ -20,11 +21,13 @@ def read_product_by_id(
     product = category_service.get_category(session=session, id=id)
     return product
 
-@router.post("/", response_model=CategoryResponse, status_code=201, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.post("/", response_model=CategoryResponse, status_code=201)
 def create_category(
     session: SessionDep, 
-    category: CategoryCreateRequest
+    category: CategoryCreateRequest,
+    decoded_token = Depends(auth.role_required(["admin"]))
 ): 
+    user_id_context.set(decoded_token.id)
     category = category_service.create_category(session=session, category=category)
     return category
 
@@ -35,19 +38,23 @@ def read_categories(
     categories = category_service.get_categories(session=session)
     return categories
     
-@router.delete('/{id}', response_model=Message, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.delete('/{id}', response_model=Message)
 def delete_category(
     id: UUID,
     session: SessionDep, 
+    decoded_token = Depends(auth.role_required(["admin"]))
 ):
+    user_id_context.set(decoded_token.id)
     category_service.delete_category_by_id(session=session, id=id)
     return Message(message="Category deleted successfully")
 
-@router.patch("/{id}", response_model=CategoryResponse, dependencies=[Depends(auth.role_required(["admin"]))])
+@router.patch("/{id}", response_model=CategoryResponse)
 def update_category(
     id: UUID,
     session: SessionDep, 
-    category_request: CategoryUpdateRequest
+    category_request: CategoryUpdateRequest,
+    decoded_token = Depends(auth.role_required(["admin"]))
 ): 
+    user_id_context.set(decoded_token.id)
     customer = category_service.update_category(session=session, category=category_request, id=id)
     return customer

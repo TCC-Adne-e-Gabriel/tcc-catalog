@@ -1,10 +1,10 @@
-from app.models.product import Product, Category
+from app.models.product import Category
 from app.schemas.category import CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest
 from sqlmodel import Session, select
 from uuid import UUID
 from typing import List
-from app.exceptions import DuplicatedCategoryException, CategoryNameAlreadyExists, CategoryNotFoundException
-from http import HTTPStatus
+from app.exceptions import CategoryNameAlreadyExists, CategoryNotFoundException
+from app.catalog_logging import logger
 
 class CategoryService():
   
@@ -17,6 +17,8 @@ class CategoryService():
         session.add(db_category)
         session.commit()
         session.refresh(db_category)
+        
+        logger.audit(f"Category {db_category.id} created")
         return db_category
 
     def get_category_by_name(self, session: Session, name: str) -> Category: 
@@ -48,6 +50,7 @@ class CategoryService():
             session.commit()
         session.delete(category)
         session.commit()
+        logger.audit(f"Category {id} deleted")
 
     def update_category(self, session: Session, category: CategoryUpdateRequest, current_category: Category) -> CategoryResponse:
         category_db = category.model_dump(exclude_none=True)
@@ -55,5 +58,7 @@ class CategoryService():
         session.add(current_category)
         session.commit()
         session.refresh(current_category)
+        logger.audit(f"Category {current_category.id} updated")
         return current_category
+
 
