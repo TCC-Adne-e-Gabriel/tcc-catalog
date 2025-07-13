@@ -42,10 +42,7 @@ class Product(SQLModel, table=True):
     )
     discount: Optional[Decimal] = Field(default=0)
     quantity: int
-    image: Optional[bytes] = Field(
-        default=None,
-        sa_column=Column(LargeBinary, nullable=True)  
-    )
+    image: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
     
