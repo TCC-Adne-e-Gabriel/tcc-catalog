@@ -1,4 +1,3 @@
-from fastapi import UploadFile, File
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
@@ -13,7 +12,7 @@ class ProductBase(BaseModel):
     sku: str
     quantity: int
     available: bool
-    image: Optional[UploadFile] = File(None)
+    image: Optional[str] = None
 
 class ProductUpdateRequest(BaseModel):
     name: Optional[str] = None
@@ -22,7 +21,7 @@ class ProductUpdateRequest(BaseModel):
     sku: Optional[str] = None
     category_id: Optional[List[UUID]] = None
     quantity: Optional[int] = None
-    image: Optional[UploadFile] = File(None)
+    image: Optional[str] = None
 
 class ProductCreateRequest(ProductBase): 
     category_id: Optional[List[UUID]] = None

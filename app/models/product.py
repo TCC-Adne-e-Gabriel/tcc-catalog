@@ -1,4 +1,3 @@
-from fastapi import UploadFile, File
 from typing import Optional, List
 from datetime import datetime, timezone
 from sqlalchemy import LargeBinary
