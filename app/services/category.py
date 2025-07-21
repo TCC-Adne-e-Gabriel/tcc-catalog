@@ -52,7 +52,8 @@ class CategoryService():
         session.commit()
         logger.audit(f"Category {id} deleted")
 
-    def update_category(self, session: Session, category: CategoryUpdateRequest, current_category: Category) -> CategoryResponse:
+    def update_category(self, session: Session, category: CategoryUpdateRequest, id: UUID) -> CategoryResponse:
+        current_category = self.get_category_by_id(session, id)
         category_db = category.model_dump(exclude_none=True)
         current_category.sqlmodel_update(category_db)
         session.add(current_category)

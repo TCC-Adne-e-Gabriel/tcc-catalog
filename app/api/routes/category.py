@@ -38,7 +38,7 @@ def read_categories(
     categories = category_service.get_categories(session=session)
     return categories
     
-@router.delete('/{id}', response_model=Message)
+@router.delete('/{id}/', response_model=Message)
 def delete_category(
     id: UUID,
     session: SessionDep, 
@@ -48,7 +48,7 @@ def delete_category(
     category_service.delete_category_by_id(session=session, id=id)
     return Message(message="Category deleted successfully")
 
-@router.patch("/{id}", response_model=CategoryResponse)
+@router.patch("/{id}/", response_model=CategoryResponse)
 def update_category(
     id: UUID,
     session: SessionDep, 

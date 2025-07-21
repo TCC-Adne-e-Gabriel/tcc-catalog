@@ -19,7 +19,7 @@ product_service = ProductService()
 category_service = CategoryService()
 
 
-@router.get("/{id}", response_model=ProductResponse)
+@router.get("/{id}/", response_model=ProductResponse)
 def read_product_by_id(
     id: UUID, 
     session: SessionDep, 

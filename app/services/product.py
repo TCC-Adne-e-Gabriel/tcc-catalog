@@ -110,7 +110,7 @@ class ProductService():
     def desassociate_category(self, session: Session, category_unlink: CategoryAsociation) -> ProductResponse: 
         product = self.get_product_by_id(session=session, id=category_unlink.product_id)
         if not product: 
-            raise ProductNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Product not Found")
+            raise ProductNotFoundException
         
         category = self.category_service.get_category_by_id(session=session, id=category_unlink.category_id)
         if not category: 
@@ -130,7 +130,7 @@ class ProductService():
         product = self.get_product_by_id(session=session, id=id)
 
         if not product: 
-            raise ProductNotFoundException(status_code=HTTPStatus.NOT_FOUND, detail="Product not Found")
+            raise ProductNotFoundException
         for category in product.categories:
             category.products.remove(product)
             session.commit()
